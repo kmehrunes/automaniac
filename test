@@ -1,0 +1,38 @@
+#!/bin/bash
+
+src_dir="$PWD/src"
+test_dir="$PWD/src/tests"
+test_bin="$PWD/bin/tests"
+include_dir="$PWD/includes/"
+libs_dir="$PWD/boost_bin"
+cpp_version="14"
+linker_opts="-lboost_system -lboost_filesystem -lpthread"
+catch_precompiled="$test_dir/tests-main.o"
+compiler_opts="-std=c++$cpp_version -Wl,-rpath=$libs_dir -L$libs_dir $linker_opts"
+
+if [ ! -f $catch_precompiled ]; then
+	echo "Needs to precompile catch first"
+	g++ -std=c++14 tests-main.cpp -c
+fi
+
+tests=('parsing.cpp' 'commands.cpp')
+sources=('jobs.cpp' 'commands.cpp')
+executables=('jobstest' 'commandstest')
+
+num_tests=${#tests[@]}
+max_index=$(( $num_tests - 1 ))
+
+for index in $(seq 0 $max_index); do
+	echo "running test ${tests[$index]}"
+	test_file=${tests[$index]}
+	src_files=${sources[$index]}
+	augemented_src_files=""
+	exec_file=${executables[$index]}
+
+	for file in $src_files; do
+		augemented_src_files="$augemented_src_files $src_dir/$file"
+	done
+
+	g++ $compiler_opts -I$include_dir $catch_precompiled $augemented_src_files \
+		$test_dir/$test_file -o $test_bin/$exec_file && $test_bin/$exec_file
+done
