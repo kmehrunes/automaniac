@@ -4,6 +4,7 @@
 #include <thread>
 
 #include <boost/algorithm/string.hpp>
+#include <boost/filesystem.hpp>
 
 #include "schedulers.h"
 #include "jobs-processing.h"
@@ -11,6 +12,7 @@
 
 using namespace std::chrono;
 using namespace schedulers;
+using namespace boost;
 
 #define SECONDS 1000
 #define MINUTES SECONDS * 60
@@ -94,6 +96,9 @@ schedulers::scheduleJobThread(const Job & job)
 	else if (scheduler.compare("now") == 0) {
 		now(params);
 	}
+	else if (scheduler.compare("watch") == 0) {
+		watch(params);
+	}
 	else {
 		printerr("Unknown scheduler " + scheduler);
 	}
@@ -153,4 +158,30 @@ schedulers::now(const SchedulerJobInfo & jobInfo)
 	const std::string & name = jobInfo.options.name;
 	println("[" + name + "] will run now");
 	runJobThread(1ms, false, jobInfo.options, jobInfo.statements);
+}
+
+void
+schedulers::watch(const SchedulerJobInfo & jobInfo)
+{
+	if (jobInfo.arguments.size() < 1) {
+		println("A file path is required!");
+		return;
+	}
+
+	filesystem::path path = jobInfo.arguments[0];
+
+	// checking exitence
+	if (filesystem::exists(path)) {
+		println("File exists");
+	}
+	else {
+		println("File not found");
+	}
+
+	// if the file didn't exist and then it was created, run the job
+
+	// checking last write time
+	// std::time_t lastModified = last_write_time(path);
+
+	// time difference less than checking interval? if so, run task
 }

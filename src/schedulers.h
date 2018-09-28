@@ -38,6 +38,7 @@ namespace schedulers
 	void every(const SchedulerJobInfo & params);
 	void after(const SchedulerJobInfo & params);
 	void now(const SchedulerJobInfo & params);
+	void watch(const SchedulerJobInfo & params);
 }
 
 #endif
