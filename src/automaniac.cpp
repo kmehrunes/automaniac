@@ -66,7 +66,6 @@ pair<vector<string>, unsigned> getNextJob(const vector<string> & lines, unsigned
 
 	unsigned jobDescriptionIndex = skipToJobDescription(lines, fromIndex);
 
-	offset += jobDescriptionIndex;
 	jobLines.push_back(lines.at(jobDescriptionIndex));
 
 	for (auto iter = lines.begin() + jobDescriptionIndex + 1; iter != lines.end(); iter++) {
@@ -95,7 +94,7 @@ vector<vector<string>> separateJobsLines(const vector<string> & allLines)
 		pair<vector<string>, unsigned> nextJobLines = getNextJob(allLines, nextIndex);
 		jobsLines.push_back(nextJobLines.first);
 
-		if (nextJobLines.second == nextIndex)
+		if (nextJobLines.second == nextIndex || nextJobLines.second >= allLines.size() - 1)
 			break;
 
 		nextIndex = nextJobLines.second;
