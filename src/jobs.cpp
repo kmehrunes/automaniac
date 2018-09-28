@@ -11,8 +11,8 @@ bool
 jobparsers::validateDescriptionLine(const std::string & description)
 {
 	static const std::string segments[] = {
-		"\\s*[a-zA-Z]+(\\s+\\w+)*\\s*\\(.*\\)\\s*:\\s*", // matches with options
-		"\\s*[a-zA-Z]+(\\s+\\w+)*\\s*:\\s*" // matches without options
+		"\\s*[a-zA-Z]+(\\s+\\S+)*\\s*\\(.*\\)\\s*:\\s*", // matches with options
+		"\\s*[a-zA-Z]+(\\s+\\S+)*\\s*:\\s*" // matches without options
 	};
 	static const std::string combined = "(" + segments[0] + "|" + segments[1] + ")(\\n|$)";
 	static const std::regex lineregex(combined);
