@@ -190,6 +190,7 @@ jobparsers::parseJob(const std::vector<std::string> & jobLines)
 	});
 }
 
+#include <iostream>
 ResultOrError<JobOptions>
 jobparsers::mapJobOptions(const OptionsMap & optionsMap)
 {
@@ -198,7 +199,7 @@ jobparsers::mapJobOptions(const OptionsMap & optionsMap)
 	auto exitIter = optionsMap.find("fail_exit");
 
 	std::string name = nameIter != optionsMap.end() ? nameIter->second : "unnamed job";
-	std::string output = nameIter != optionsMap.end() ? outputIter->second : "";
+	std::string output = outputIter != optionsMap.end() ? outputIter->second : "";
 
 	bool exit = true;
 	if (exitIter != optionsMap.end()) {
