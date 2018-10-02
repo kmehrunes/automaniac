@@ -1,9 +1,12 @@
+watch /home/kld/hi.txt(name = watch-test):
+	exec echo "done"
+
 every 1 minutes(name=test-job, output = /home/kld/helm/text.out):
 	exec echo "hello"
 	exec sleep 5
 	exec ls ~/
 
-now 10 seconds(fail_exit=no):
+now (fail_exit=no):
 	run ~/script.py
 	exec ps
 
