@@ -9,6 +9,7 @@
 #include "schedulers.h"
 #include "jobs-processing.h"
 #include "util.hpp"
+#include "timeutil.h"
 
 using namespace std::chrono;
 using namespace schedulers;
@@ -168,20 +169,28 @@ schedulers::watch(const SchedulerJobInfo & jobInfo)
 		return;
 	}
 
-	filesystem::path path = jobInfo.arguments[0];
+	const filesystem::path path = jobInfo.arguments[0];
+	bool fileExisted = filesystem::exists(path);
+	std::time_t previousLastModified = fileExisted ? last_write_time(path) : 0;
 
-	// checking exitence
-	if (filesystem::exists(path)) {
-		println("File exists");
+	while (1) {
+		std::this_thread::sleep_for(5s);
+		bool fileExists = filesystem::exists(path);
+
+		// checking exitence
+		if (fileExists) {
+			std::time_t currentLastModified = last_write_time(path);
+
+			// the file was created during the sleep interval
+			if (!fileExisted) {
+				// execute
+			}
+			// the file was modified during the sleep interval
+			else if (timeDiff(currentLastModified, previousLastModified) > 5) {
+				// execute
+			}
+
+			previousLastModified = currentLastModified;
+		}
 	}
-	else {
-		println("File not found");
-	}
-
-	// if the file didn't exist and then it was created, run the job
-
-	// checking last write time
-	// std::time_t lastModified = last_write_time(path);
-
-	// time difference less than checking interval? if so, run task
 }
