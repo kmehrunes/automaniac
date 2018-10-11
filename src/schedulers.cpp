@@ -9,6 +9,7 @@
 #include "schedulers.h"
 #include "jobs-processing.h"
 #include "util.hpp"
+#include "timeutil.h"
 
 using namespace std::chrono;
 using namespace schedulers;
@@ -66,6 +67,25 @@ schedulers::parseDurationArgs(const std::vector<std::string> & args)
 	return fail("Failed to process " + args.at(0) + " " + args.at(1));
 }
 
+ResultOrError<std::tm> 
+schedulers::parseTime(TimeParsingType type, const std::vector<std::string> & args)
+{
+	if (args.size() == 0)
+		return fail("Requires at least one argument");
+
+	if (type == TimeParsingType::DATE) {
+		return timeutil::parseDatePattern(args.at(0));
+	}
+	else if (type == TimeParsingType::TIME) {
+		return timeutil::parseTimePattern(args.at(0));
+	}
+	else if (type == TimeParsingType::DATE_TIME) {
+		return timeutil::parseFullDateTime(args.at(0));
+	}
+
+	return fail("Unrecognize date/time pattern");
+}
+
 std::vector<std::string>
 schedulers::splitArgsByBlanks(const std::string & argsString)
 {
@@ -98,6 +118,9 @@ schedulers::scheduleJobThread(const Job & job)
 	}
 	else if (scheduler.compare("watch") == 0) {
 		watch(params);
+	}
+	else if (scheduler.compare("on") == 0) {
+		on(params);
 	}
 	else {
 		printerr("Unknown scheduler " + scheduler);
@@ -196,4 +219,64 @@ schedulers::watch(const SchedulerJobInfo & jobInfo)
 			previousLastModified = currentLastModified;
 		}
 	}
+}
+
+void
+schedulers::on(const SchedulerJobInfo & jobInfo)
+{
+	int argsSize = jobInfo.arguments.size();
+
+	if (argsSize == 1) {
+		const std::string & name = jobInfo.options.name;
+		println("[" + name + "] will run now");
+
+		parseTime(TimeParsingType::DATE, jobInfo.arguments)
+			.mapSuccess<std::time_t>([] (const std::tm & time) {
+				return succeed(timeutil::timeDiffFromNow(time));
+			})
+			.onSuccess([&name] (const std::time_t & difference) {
+				// TODO: Convert to duration and execute the jobs
+				println("diff: " + std::to_string(difference));
+			})
+			.onFailure([] (const Error & err) {
+				printerr(err.message);
+			});
+	} 
+	else if (argsSize == 3) {
+		onAt(jobInfo);
+	}
+	else {
+		printerr("Invalid number of arguments");
+	}
+}
+
+void
+schedulers::onAt(const SchedulerJobInfo & jobInfo)
+{
+	if (jobInfo.arguments.size() != 3) {
+		printerr("On-at scheduler requires three arguments");
+		return;
+	}
+
+	if (jobInfo.arguments.at(1).compare("at") != 0) {
+		printerr("Unrecognize command " + jobInfo.arguments.at(1));
+		return;
+	}
+
+	const std::string & name = jobInfo.options.name;
+
+	std::vector<std::string> dateTimeArgs = {
+		jobInfo.arguments.at(0) + "-" + jobInfo.arguments.at(2)
+	};
+	parseTime(TimeParsingType::DATE_TIME, dateTimeArgs)
+		.mapSuccess<std::time_t>([] (const std::tm & time) {
+			return succeed(timeutil::timeDiffFromNow(time));
+		})
+		.onSuccess([&name] (const std::time_t & difference) {
+			// TODO: Convert to duration and execute the jobs
+			println("diff: " + std::to_string(difference));
+		})
+		.onFailure([] (const Error & err) {
+			printerr(err.message);
+		});
 }

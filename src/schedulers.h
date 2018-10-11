@@ -26,9 +26,18 @@ namespace schedulers
 		const std::vector<Statement> & statements;
 	};
 
+	enum TimeParsingType
+	{
+		DATE,
+		TIME,
+		DATE_TIME
+	};
+
 	ResultOrError<DurationArgs> parseDurationArgs(const std::vector<std::string> & args);
 	ResultOrError<DurationUnit> parseDuration(const DurationArgs & args);
 	ResultOrError<DurationUnit> parseDuration(unsigned long count, const std::string & unit);
+	ResultOrError<std::tm> parseTime(TimeParsingType type, const std::vector<std::string> & args);
+
 	std::vector<std::string> splitArgsByBlanks(const std::string & argsString);
 
 	void scheduleJobThread(const Job & job);
@@ -39,6 +48,8 @@ namespace schedulers
 	void after(const SchedulerJobInfo & params);
 	void now(const SchedulerJobInfo & params);
 	void watch(const SchedulerJobInfo & params);
+	void on(const SchedulerJobInfo & params);
+	void onAt(const SchedulerJobInfo & params);
 }
 
 #endif
