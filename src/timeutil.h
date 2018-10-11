@@ -12,10 +12,10 @@
 
 namespace timeutil
 {
-	const std::string FULL_DATE_TIME_PATTERN = "%d-%b-%Y-%H:%M:%S";
+	const std::string FULL_DATE_TIME_PATTERN = "%d-%b-%Y-%H-%M-%S";
 	const std::string FULL_DATE_PATTERN = "%d-%b-%Y";
 	const std::string DM_DATE_PATTERN = "%d-%b";
-	const std::string FULL_TIME_PATTERN = "%H:%M:%S";
+	const std::string FULL_TIME_PATTERN = "%H-%M-%S";
 
 	void testTimeDiff();
 
