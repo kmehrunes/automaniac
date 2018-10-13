@@ -11,7 +11,6 @@
 namespace schedulers
 {
 	typedef std::chrono::milliseconds DurationUnit;
-	typedef std::vector<std::string> StringVector;
 
 	struct DurationArgs
 	{
