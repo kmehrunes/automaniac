@@ -234,9 +234,11 @@ schedulers::on(const SchedulerJobInfo & jobInfo)
 			.mapSuccess<std::time_t>([] (const std::tm & time) {
 				return succeed(timeutil::timeDiffFromNow(time));
 			})
-			.onSuccess([&name] (const std::time_t & difference) {
-				// TODO: Convert to duration and execute the jobs
-				println("diff: " + std::to_string(difference));
+			.onSuccess([&] (const std::time_t & difference) {
+				DurationUnit duration = milliseconds(difference * SECONDS);
+				println("[" + name + "] will be scheduled to run on " + jobInfo.arguments.at(0) + 
+						+ " at 00:00:00 (" + std::to_string(duration.count()) + " ms)");
+				runJobThread(duration, false, jobInfo.options, jobInfo.statements);
 			})
 			.onFailure([] (const Error & err) {
 				printerr(err.message);
@@ -272,9 +274,12 @@ schedulers::onAt(const SchedulerJobInfo & jobInfo)
 		.mapSuccess<std::time_t>([] (const std::tm & time) {
 			return succeed(timeutil::timeDiffFromNow(time));
 		})
-		.onSuccess([&name] (const std::time_t & difference) {
-			// TODO: Convert to duration and execute the jobs
-			println("diff: " + std::to_string(difference));
+		.onSuccess([&] (const std::time_t & difference) {
+			DurationUnit duration = milliseconds(difference * SECONDS);
+
+			println("[" + name + "] will be scheduled to run on " + jobInfo.arguments.at(0) + 
+						+ " at " + jobInfo.arguments.at(2) + " (" + std::to_string(duration.count()) + " ms)");
+			runJobThread(duration, false, jobInfo.options, jobInfo.statements);
 		})
 		.onFailure([] (const Error & err) {
 			printerr(err.message);
