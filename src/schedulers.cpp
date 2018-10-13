@@ -19,73 +19,6 @@ using namespace boost;
 #define MINUTES SECONDS * 60
 #define HOURS MINUTES * 60
 
-ResultOrError<DurationUnit> 
-schedulers::parseDuration(const DurationArgs & args)
-{
-	return parseDuration(args.count, args.unit);
-}
-
-ResultOrError<DurationUnit> 
-schedulers::parseDuration(unsigned long count, const std::string & unit)
-{
-	if (unit.compare("milliseconds") == 0) {
-		return succeed(milliseconds(count));
-	}
-	else if (unit.compare("seconds") == 0) {
-		return succeed(milliseconds(count * SECONDS));
-	}
-	else if (unit.compare("minutes") == 0) {
-		return succeed(milliseconds(count * MINUTES));
-	}
-	else if (unit.compare("hours") == 0) {
-		return succeed(milliseconds(count * HOURS));
-	}
-
-	return fail("Unrecognized unit " + unit);
-}
-
-ResultOrError<DurationArgs> 
-schedulers::parseDurationArgs(const std::vector<std::string> & args)
-{
-	if (args.size() != 2)
-		return fail("Requires exactly two arguments");
-
-	try {
-		unsigned long count = std::stoul(args.at(0));
-		return succeed(DurationArgs {
-			count,
-			args.at(1)
-		});
-	}
-	catch (const std::invalid_argument &) {
-		return fail(args.at(0) + " isn't a valid number");
-	}
-	catch (const std::out_of_range &) {
-		return fail(args.at(0) + " is beyond the limits");
-	}
-
-	return fail("Failed to process " + args.at(0) + " " + args.at(1));
-}
-
-ResultOrError<std::tm> 
-schedulers::parseTime(TimeParsingType type, const std::vector<std::string> & args)
-{
-	if (args.size() == 0)
-		return fail("Requires at least one argument");
-
-	if (type == TimeParsingType::DATE) {
-		return timeutil::parseDatePattern(args.at(0));
-	}
-	else if (type == TimeParsingType::TIME) {
-		return timeutil::parseTimePattern(args.at(0));
-	}
-	else if (type == TimeParsingType::DATE_TIME) {
-		return timeutil::parseFullDateTime(args.at(0));
-	}
-
-	return fail("Unrecognize date/time pattern");
-}
-
 std::vector<std::string>
 schedulers::splitArgsByBlanks(const std::string & argsString)
 {
@@ -128,7 +61,7 @@ schedulers::scheduleJobThread(const Job & job)
 }
 
 void
-schedulers::runJobThread(DurationUnit waitDuration, bool repeat, 
+schedulers::runJobThread(timeutil::DurationUnit waitDuration, bool repeat, 
 						 JobOptions options, std::vector<Statement> statements)
 {
 	while (1) {
@@ -144,14 +77,14 @@ schedulers::runJobThread(DurationUnit waitDuration, bool repeat,
 void
 schedulers::every(const SchedulerJobInfo & jobInfo)
 {
-	parseDurationArgs(jobInfo.arguments)
-		.mapSuccess<DurationUnit>([&](const DurationArgs & args) {
+	timeutil::parseDurationArgs(jobInfo.arguments)
+		.mapSuccess<timeutil::DurationUnit>([&](const timeutil::DurationArgs & args) {
 			const std::string & name = jobInfo.options.name;
 			println("[" + name + "] will be scheduled to run every " + std::to_string(args.count) 
 						+ " " + args.unit + "(s)");
 			return parseDuration(args);
 		})
-		.onSuccess([&](DurationUnit duration) {
+		.onSuccess([&](timeutil::DurationUnit duration) {
 			const std::string & name = jobInfo.options.name;
 			println("[" + name + "] scheduled successfully");
 			runJobThread(duration, true, jobInfo.options, jobInfo.statements);
@@ -161,14 +94,14 @@ schedulers::every(const SchedulerJobInfo & jobInfo)
 void
 schedulers::after(const SchedulerJobInfo & jobInfo)
 {
-	parseDurationArgs(jobInfo.arguments)
-		.mapSuccess<DurationUnit>([&](const DurationArgs & args) {
+	timeutil::parseDurationArgs(jobInfo.arguments)
+		.mapSuccess<timeutil::DurationUnit>([&](const timeutil::DurationArgs & args) {
 			const std::string & name = jobInfo.options.name;
 			println("[" + name + "] will be scheduled to run after " + std::to_string(args.count) 
 						+ " " + args.unit + "(s)");
 			return parseDuration(args);
 		})
-		.onSuccess([&](DurationUnit duration) {
+		.onSuccess([&](timeutil::DurationUnit duration) {
 			const std::string & name = jobInfo.options.name;
 			println("[" + name + "] scheduled successfully");
 			runJobThread(duration, false, jobInfo.options, jobInfo.statements);
@@ -230,12 +163,12 @@ schedulers::on(const SchedulerJobInfo & jobInfo)
 		const std::string & name = jobInfo.options.name;
 		println("[" + name + "] will run now");
 
-		parseTime(TimeParsingType::DATE, jobInfo.arguments)
+		parseTime(timeutil::TimeParsingType::DATE, jobInfo.arguments)
 			.mapSuccess<std::time_t>([] (const std::tm & time) {
 				return succeed(timeutil::timeDiffFromNow(time));
 			})
 			.onSuccess([&] (const std::time_t & difference) {
-				DurationUnit duration = milliseconds(difference * SECONDS);
+				timeutil::DurationUnit duration = milliseconds(difference * SECONDS);
 				println("[" + name + "] will be scheduled to run on " + jobInfo.arguments.at(0) + 
 						+ " at 00:00:00 (" + std::to_string(duration.count()) + " ms)");
 				runJobThread(duration, false, jobInfo.options, jobInfo.statements);
@@ -270,12 +203,12 @@ schedulers::onAt(const SchedulerJobInfo & jobInfo)
 	std::vector<std::string> dateTimeArgs = {
 		jobInfo.arguments.at(0) + "-" + jobInfo.arguments.at(2)
 	};
-	parseTime(TimeParsingType::DATE_TIME, dateTimeArgs)
+	parseTime(timeutil::TimeParsingType::DATE_TIME, dateTimeArgs)
 		.mapSuccess<std::time_t>([] (const std::tm & time) {
 			return succeed(timeutil::timeDiffFromNow(time));
 		})
 		.onSuccess([&] (const std::time_t & difference) {
-			DurationUnit duration = milliseconds(difference * SECONDS);
+			timeutil::DurationUnit duration = milliseconds(difference * SECONDS);
 
 			println("[" + name + "] will be scheduled to run on " + jobInfo.arguments.at(0) + 
 						+ " at " + jobInfo.arguments.at(2) + " (" + std::to_string(duration.count()) + " ms)");

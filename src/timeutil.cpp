@@ -2,32 +2,11 @@
 
 #include <ctime>
 
-#include "util.hpp"
-void timeutil::testTimeDiff()
-{
-	std::string fullstr = "06-Feb-2019-10:15:23";
-	std::string datestr = "06-Feb-2019";
-	std::string timestr = "10:15:23";
-	std::string fullOther = "06-Sep-2018-08:35:50";
+#define SECONDS 1000
+#define MINUTES SECONDS * 60
+#define HOURS MINUTES * 60
 
-	timeutil::parseFullDateTime(fullstr)
-		.onSuccess([&](const std::tm & t) {
-			println("Diff from now: ");
-			println(timeutil::timeDiffFromNow(t));
-		})
-		.onFailure([](const Error & err) {
-			println(err.message);
-		});
-
-	timeutil::parseDatePattern(datestr)
-		.onSuccess([&](const std::tm & t) {
-			println("Diff from now: ");
-			println(timeutil::timeDiffFromNow(t));
-		})
-		.onFailure([](const Error & err) {
-			println(err.message);
-		});
-}
+using namespace std::chrono;
 
 std::tm
 timeutil::now()
@@ -102,4 +81,71 @@ ResultOrError<std::tm>
 timeutil::parseTimePattern(const std::string & timeString)
 {
 	return parseTimeString(timeString, FULL_TIME_PATTERN);
+}
+
+ResultOrError<timeutil::DurationUnit> 
+timeutil::parseDuration(const DurationArgs & args)
+{
+	return parseDuration(args.count, args.unit);
+}
+
+ResultOrError<timeutil::DurationUnit> 
+timeutil::parseDuration(unsigned long count, const std::string & unit)
+{
+	if (unit.compare("milliseconds") == 0) {
+		return succeed(milliseconds(count));
+	}
+	else if (unit.compare("seconds") == 0) {
+		return succeed(milliseconds(count * SECONDS));
+	}
+	else if (unit.compare("minutes") == 0) {
+		return succeed(milliseconds(count * MINUTES));
+	}
+	else if (unit.compare("hours") == 0) {
+		return succeed(milliseconds(count * HOURS));
+	}
+
+	return fail("Unrecognized unit " + unit);
+}
+
+ResultOrError<timeutil::DurationArgs> 
+timeutil::parseDurationArgs(const std::vector<std::string> & args)
+{
+	if (args.size() != 2)
+		return fail("Requires exactly two arguments");
+
+	try {
+		unsigned long count = std::stoul(args.at(0));
+		return succeed(DurationArgs {
+			count,
+			args.at(1)
+		});
+	}
+	catch (const std::invalid_argument &) {
+		return fail(args.at(0) + " isn't a valid number");
+	}
+	catch (const std::out_of_range &) {
+		return fail(args.at(0) + " is beyond the limits");
+	}
+
+	return fail("Failed to process " + args.at(0) + " " + args.at(1));
+}
+
+ResultOrError<std::tm> 
+timeutil::parseTime(TimeParsingType type, const std::vector<std::string> & args)
+{
+	if (args.size() == 0)
+		return fail("Requires at least one argument");
+
+	if (type == TimeParsingType::DATE) {
+		return timeutil::parseDatePattern(args.at(0));
+	}
+	else if (type == TimeParsingType::TIME) {
+		return timeutil::parseTimePattern(args.at(0));
+	}
+	else if (type == TimeParsingType::DATE_TIME) {
+		return timeutil::parseFullDateTime(args.at(0));
+	}
+
+	return fail("Unrecognize date/time pattern");
 }
