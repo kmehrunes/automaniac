@@ -51,7 +51,7 @@ int skipToJobDescription(const vector<string> & lines, int fromIndex)
 	for (unsigned i = fromIndex; i < lines.size(); i++) {
 		const std::string & line = lines.at(i);
 
-		if (line.empty() || line.at(0) == ' ' || line.at(0) == '\t')
+		if (line.empty() || line.at(0) == ' ' || line.at(0) == '\t' || line.at(0) == '#')
 			continue;
 
 		return i;
@@ -78,7 +78,11 @@ pair<vector<string>, unsigned> getNextJob(const vector<string> & lines, unsigned
 		if (line.at(0) != ' ' && line.at(0) != '\t') 
 			break;
 
-		jobLines.push_back(boost::trim_copy(line));
+		std::string trimmed = boost::trim_copy(line);
+		if (trimmed.at(0) == '#')
+			continue;
+
+		jobLines.push_back(trimmed);
 	}
 
 	return { jobLines, fromIndex + offset };
