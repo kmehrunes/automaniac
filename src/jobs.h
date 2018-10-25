@@ -72,6 +72,10 @@ namespace jobparsers
 
 	/* ---------- */
 	
+	int skipToJobDescription(const std::vector<std::string> & lines, int fromIndex);
+	std::pair<std::vector<std::string>, unsigned> getNextJob(const std::vector<std::string> & lines, unsigned fromIndex);
+	std::vector<std::vector<std::string>> separateJobsLines(const std::vector<std::string> & allLines);
+
 	ResultOrError<JobDescription> parseDescription(const std::string & descriptionLine);
 	ResultOrError<Job> parseJob(const std::vector<std::string> & jobLines);
 	ResultOrError<JobOptions> mapJobOptions(const OptionsMap & optionsMap);

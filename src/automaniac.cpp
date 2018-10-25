@@ -15,7 +15,6 @@
 #include "commands.h"
 #include "jobs-processing.h"
 #include "schedulers.h"
-#include "timeutil.h"
 
 using namespace std;
 
@@ -46,72 +45,10 @@ ResultOrError<vector<string>> readFile(const string & fname)
 	});
 }
 
-int skipToJobDescription(const vector<string> & lines, int fromIndex)
-{
-	for (unsigned i = fromIndex; i < lines.size(); i++) {
-		const std::string & line = lines.at(i);
-
-		if (line.empty() || line.at(0) == ' ' || line.at(0) == '\t' || line.at(0) == '#')
-			continue;
-
-		return i;
-	}
-	return -1;
-}
-
-pair<vector<string>, unsigned> getNextJob(const vector<string> & lines, unsigned fromIndex)
-{
-	vector<string> jobLines;
-	unsigned offset = 0;
-
-	unsigned jobDescriptionIndex = skipToJobDescription(lines, fromIndex);
-
-	jobLines.push_back(lines.at(jobDescriptionIndex));
-
-	for (auto iter = lines.begin() + jobDescriptionIndex + 1; iter != lines.end(); iter++) {
-		const std::string & line = *iter;
-		offset++;
-
-		if (line.empty())
-			continue;
-
-		if (line.at(0) != ' ' && line.at(0) != '\t') 
-			break;
-
-		std::string trimmed = boost::trim_copy(line);
-		if (trimmed.at(0) == '#')
-			continue;
-
-		jobLines.push_back(trimmed);
-	}
-
-	return { jobLines, fromIndex + offset };
-}
-
-vector<vector<string>> separateJobsLines(const vector<string> & allLines) 
-{
-	vector<vector<string>> jobsLines;
-
-	unsigned nextIndex = 0;
-
-	while (nextIndex < allLines.size()) {
-		pair<vector<string>, unsigned> nextJobLines = getNextJob(allLines, nextIndex);
-		jobsLines.push_back(nextJobLines.first);
-
-		if (nextJobLines.second == nextIndex || nextJobLines.second >= allLines.size() - 1)
-			break;
-
-		nextIndex = nextJobLines.second;
-	}
-
-	return jobsLines;
-}
-
-#include "timeutil.h"
 int main(int argc, char const *argv[])
 {
-	if (argc < 2) {
-		printerr("Needs at least one file");
+	if (argc != 2) {
+		printerr("Needs one file");
 		return 1;
 	}
 
@@ -121,7 +58,7 @@ int main(int argc, char const *argv[])
 	for (int i = 1; i < argc; ++i) {
 		readFile(argv[i])
 			.onSuccess([&](const vector<string> & lines) {
-				auto jobsLines = separateJobsLines(lines);
+				auto jobsLines = jobparsers::separateJobsLines(lines);
 
 				for (const auto & jobLines : jobsLines) {
 					jobparsers::parseJob(jobLines)

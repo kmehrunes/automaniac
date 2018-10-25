@@ -134,7 +134,70 @@ jobparsers::parseStatement(const std::string & statementText)
 	return Statement { parts.at(0), std::vector<std::string>(parts.begin() + 1, parts.end()) };
 }
 
-#include <iostream>
+int
+jobparsers::skipToJobDescription(const std::vector<std::string> & lines, int fromIndex)
+{
+	for (unsigned i = fromIndex; i < lines.size(); i++) {
+		const std::string & line = lines.at(i);
+
+		if (line.empty() || line.at(0) == ' ' || line.at(0) == '\t' || line.at(0) == '#')
+			continue;
+
+		return i;
+	}
+	return -1;
+}
+
+std::pair<std::vector<std::string>, unsigned>
+jobparsers::getNextJob(const std::vector<std::string> & lines, unsigned fromIndex)
+{
+	std::vector<std::string> jobLines;
+	unsigned offset = 0;
+
+	unsigned jobDescriptionIndex = skipToJobDescription(lines, fromIndex);
+
+	jobLines.push_back(lines.at(jobDescriptionIndex));
+
+	for (auto iter = lines.begin() + jobDescriptionIndex + 1; iter != lines.end(); iter++) {
+		const std::string & line = *iter;
+		offset++;
+
+		if (line.empty())
+			continue;
+
+		if (line.at(0) != ' ' && line.at(0) != '\t') 
+			break;
+
+		std::string trimmed = boost::trim_copy(line);
+		if (trimmed.at(0) == '#')
+			continue;
+
+		jobLines.push_back(trimmed);
+	}
+
+	return { jobLines, fromIndex + offset };
+}
+
+std::vector<std::vector<std::string>>
+jobparsers::separateJobsLines(const std::vector<std::string> & allLines) 
+{
+	std::vector<std::vector<std::string>> jobsLines;
+
+	unsigned nextIndex = 0;
+
+	while (nextIndex < allLines.size()) {
+		std::pair<std::vector<std::string>, unsigned> nextJobLines = getNextJob(allLines, nextIndex);
+		jobsLines.push_back(nextJobLines.first);
+
+		if (nextJobLines.second == nextIndex || nextJobLines.second >= allLines.size() - 1)
+			break;
+
+		nextIndex = nextJobLines.second;
+	}
+
+	return jobsLines;
+}
+
 ResultOrError<JobDescription> 
 jobparsers::parseDescription(const std::string & descriptionLine)
 {
@@ -190,7 +253,6 @@ jobparsers::parseJob(const std::vector<std::string> & jobLines)
 	});
 }
 
-#include <iostream>
 ResultOrError<JobOptions>
 jobparsers::mapJobOptions(const OptionsMap & optionsMap)
 {
