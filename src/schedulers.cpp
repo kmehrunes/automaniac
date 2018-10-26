@@ -55,6 +55,9 @@ schedulers::scheduleJobThread(const Job & job)
 	else if (scheduler.compare("on") == 0) {
 		on(params);
 	}
+	else if (scheduler.compare("tomorrow") == 0) {
+		tomorrow(params);
+	}
 	else {
 		printerr("Unknown scheduler " + scheduler);
 	}
@@ -161,7 +164,6 @@ schedulers::on(const SchedulerJobInfo & jobInfo)
 
 	if (argsSize == 1) {
 		const std::string & name = jobInfo.options.name;
-		println("[" + name + "] will run now");
 
 		parseTime(timeutil::TimeParsingType::DATE, jobInfo.arguments)
 			.mapSuccess<std::time_t>([] (const std::tm & time) {
@@ -212,6 +214,63 @@ schedulers::onAt(const SchedulerJobInfo & jobInfo)
 
 			println("[" + name + "] will be scheduled to run on " + jobInfo.arguments.at(0) + 
 						+ " at " + jobInfo.arguments.at(2) + " (" + std::to_string(duration.count()) + " ms)");
+			runJobThread(duration, false, jobInfo.options, jobInfo.statements);
+		})
+		.onFailure([] (const Error & err) {
+			printerr(err.message);
+		});
+}
+
+void
+schedulers::tomorrow(const SchedulerJobInfo & jobInfo)
+{
+	int argsSize = jobInfo.arguments.size();
+
+	// there's a bug which causes the argsSize to be always at least 1
+	if (argsSize == 1) {
+		const std::string & name = jobInfo.options.name;
+		const std::time_t diff = timeutil::timeDiffFromNow(timeutil::tomorrow());
+		timeutil::DurationUnit duration = milliseconds(diff * SECONDS);
+
+		println("[" + name + "] will be scheduled to run tomorrow at 00:00:00 (" + 
+			std::to_string(duration.count()) + " ms)");
+		runJobThread(duration, false, jobInfo.options, jobInfo.statements);
+	} 
+	else if (argsSize == 2) {
+		tomorrowAt(jobInfo);
+	}
+	else {
+		printerr("Invalid number of arguments");
+	}
+}
+
+void
+schedulers::tomorrowAt(const SchedulerJobInfo & jobInfo)
+{
+	if (jobInfo.arguments.size() != 2) {
+		printerr("Tomorrow-at scheduler requires two arguments");
+		return;
+	}
+
+	if (jobInfo.arguments.at(0).compare("at") != 0) {
+		printerr("Unrecognize command " + jobInfo.arguments.at(0));
+		return;
+	}
+
+	const std::string & name = jobInfo.options.name;
+	std::vector<std::string> timeArgs = { jobInfo.arguments.at(1) };
+
+	parseTime(timeutil::TimeParsingType::TIME, timeArgs)
+		.mapSuccess<std::time_t>([] (const std::tm & time) {
+			std::tm tomorrowDate = timeutil::tomorrow();
+			std::tm tomorrowFull = timeutil::addTime(tomorrowDate, time.tm_hour, time.tm_min, time.tm_sec);
+			return succeed(timeutil::timeDiffFromNow(tomorrowFull));
+		})
+		.onSuccess([&] (const std::time_t & difference) {
+			timeutil::DurationUnit duration = milliseconds(difference * SECONDS);
+
+			println("[" + name + "] will be scheduled to run tomorrow at " + jobInfo.arguments.at(2) +
+			 " (" + std::to_string(duration.count()) + " ms)");
 			runJobThread(duration, false, jobInfo.options, jobInfo.statements);
 		})
 		.onFailure([] (const Error & err) {

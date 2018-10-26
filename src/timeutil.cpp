@@ -12,7 +12,31 @@ std::tm
 timeutil::now()
 {
 	std::time_t t = std::time(0);   // get time now
-    return *(std::localtime(&t));
+	return *(std::localtime(&t));
+}
+
+std::tm
+timeutil::tomorrow()
+{
+	std::time_t t = std::time(0);
+	t += 24 * 60 * 60; // 24 hours * 60 minutes * 60 seconds
+	std::tm tomorrow = *(std::localtime(&t));
+	tomorrow.tm_sec = 0;
+	tomorrow.tm_min = 0;
+	tomorrow.tm_hour = 0;
+
+	return tomorrow;
+}
+
+std::tm
+timeutil::addTime(const std::tm & t, unsigned hour, unsigned minutes, unsigned seconds)
+{
+	std::tm copy = t;
+	copy.tm_hour = hour;
+	copy.tm_min = minutes;
+	copy.tm_sec = seconds;
+
+	return copy;
 }
 
 std::time_t 

@@ -30,6 +30,8 @@ namespace schedulers
 	void watch(const SchedulerJobInfo & params);
 	void on(const SchedulerJobInfo & params);
 	void onAt(const SchedulerJobInfo & params);
+	void tomorrow(const SchedulerJobInfo & params);
+	void tomorrowAt(const SchedulerJobInfo & params);
 }
 
 #endif

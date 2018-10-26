@@ -39,7 +39,9 @@ namespace timeutil
 	std::time_t timeDiff(const std::tm & t1, const std::tm & t2);
 	std::time_t timeDiffFromNow(const std::tm & time);
 	std::tm now();
+	std::tm tomorrow();
 	std::tm addToday(const std::tm & t);
+	std::tm addTime(const std::tm & t, unsigned hour, unsigned minutes, unsigned seconds);
 
 	ResultOrError<std::tm> parseTimeString(const std::string & timeString, const std::string & pattern);
 
