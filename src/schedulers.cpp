@@ -269,7 +269,7 @@ schedulers::tomorrowAt(const SchedulerJobInfo & jobInfo)
 		.onSuccess([&] (const std::time_t & difference) {
 			timeutil::DurationUnit duration = milliseconds(difference * SECONDS);
 
-			println("[" + name + "] will be scheduled to run tomorrow at " + jobInfo.arguments.at(2) +
+			println("[" + name + "] will be scheduled to run tomorrow at " + jobInfo.arguments.at(1) +
 			 " (" + std::to_string(duration.count()) + " ms)");
 			runJobThread(duration, false, jobInfo.options, jobInfo.statements);
 		})
