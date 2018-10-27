@@ -140,7 +140,11 @@ jobparsers::skipToJobDescription(const std::vector<std::string> & lines, int fro
 	for (unsigned i = fromIndex; i < lines.size(); i++) {
 		const std::string & line = lines.at(i);
 
-		if (line.empty() || line.at(0) == ' ' || line.at(0) == '\t' || line.at(0) == '#')
+		if (line.empty() || line.at(0) == ' ' || line.at(0) == '\t')
+			continue;
+
+		std::string trimmed = boost::trim_copy(line);
+		if (trimmed.empty() || line.at(0) == '#')
 			continue;
 
 		return i;
@@ -155,6 +159,7 @@ jobparsers::getNextJob(const std::vector<std::string> & lines, unsigned fromInde
 	unsigned offset = 0;
 
 	unsigned jobDescriptionIndex = skipToJobDescription(lines, fromIndex);
+	offset += jobDescriptionIndex;
 
 	jobLines.push_back(lines.at(jobDescriptionIndex));
 
@@ -169,7 +174,7 @@ jobparsers::getNextJob(const std::vector<std::string> & lines, unsigned fromInde
 			break;
 
 		std::string trimmed = boost::trim_copy(line);
-		if (trimmed.at(0) == '#')
+		if (trimmed.empty() || trimmed.at(0) == '#')
 			continue;
 
 		jobLines.push_back(trimmed);
