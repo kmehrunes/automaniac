@@ -2,6 +2,7 @@
 #include <regex>
 #include <array>
 #include <functional>
+#include <algorithm>
 
 #include "jobs.h"
 
@@ -34,12 +35,12 @@ jobparsers::validateOptionsString(const std::string & optionsString)
 ExtractionResult
 jobparsers::extractScheduler(const std::string & description, int from)
 {
-	size_t pos = description.find_first_of("(:");
+	std::string trimmed = boost::trim_copy(description);
+	size_t optionStartPos = trimmed.find_first_of("(");
+	size_t len = trimmed.length() - 1;
+	size_t splitPoint = std::min(optionStartPos, len);
 
-	if (pos == std::string::npos)
-		return ExtractionResult { "", std::string::npos, std::string::npos };
-
-	return ExtractionResult { boost::trim_copy(description.substr(0, pos)), 0, pos };
+	return ExtractionResult { boost::trim_copy(trimmed.substr(0, splitPoint)), 0, splitPoint };
 }
 
 
